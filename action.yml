@@ -1,0 +1,120 @@
+name: render-gap
+description: Fail the build when a page hides its content, headings or JSON-LD behind JavaScript, where non-JS AI crawlers never see it.
+author: Ángel Muñiz Pedraza
+
+branding:
+  icon: eye-off
+  color: gray-dark
+
+inputs:
+  urls:
+    description: URLs to check, separated by spaces or newlines.
+    required: true
+  min-score:
+    description: Fail the step if any URL scores below this (0-100). Set to an empty string to report without gating.
+    required: false
+    default: "80"
+  max-missing-pct:
+    description: Fail the step if more than this percentage of the body text is missing from the served HTML. Empty disables this gate.
+    required: false
+    default: ""
+  settle-ms:
+    description: Milliseconds to wait after networkidle before reading the rendered DOM. Raise it for frameworks that hydrate late.
+    required: false
+    default: "1500"
+  markdown:
+    description: Where to write the markdown report.
+    required: false
+    default: render-gap-report.md
+  json:
+    description: Where to write the JSON report. Empty writes no JSON.
+    required: false
+    default: ""
+  job-summary:
+    description: Append the markdown report to the GitHub job summary.
+    required: false
+    default: "true"
+  python-version:
+    description: Python version used to run render-gap.
+    required: false
+    default: "3.12"
+  ref:
+    description: Git ref of render-gap to install. Defaults to the default branch.
+    required: false
+    default: ""
+
+outputs:
+  report:
+    description: Path to the markdown report that was written.
+    value: ${{ inputs.markdown }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install render-gap and Chromium
+      shell: bash
+      env:
+        RG_REF: ${{ inputs.ref }}
+      run: |
+        set -euo pipefail
+        python -m pip install --upgrade pip
+        spec="git+https://github.com/angelmunizpedraza/render-gap"
+        if [ -n "${RG_REF}" ]; then
+          spec="${spec}@${RG_REF}"
+        fi
+        pip install "render-gap[browser] @ ${spec}"
+        python -m playwright install --with-deps chromium
+
+    - name: Run render-gap
+      shell: bash
+      env:
+        RG_URLS: ${{ inputs.urls }}
+        RG_MIN_SCORE: ${{ inputs.min-score }}
+        RG_MAX_MISSING: ${{ inputs.max-missing-pct }}
+        RG_SETTLE: ${{ inputs.settle-ms }}
+        RG_MD: ${{ inputs.markdown }}
+        RG_JSON: ${{ inputs.json }}
+      run: |
+        set -uo pipefail
+        args=()
+        for u in ${RG_URLS}; do
+          args+=("$u")
+        done
+        if [ "${#args[@]}" -eq 0 ]; then
+          echo "render-gap: no URLs given" >&2
+          exit 2
+        fi
+        args+=(--md "${RG_MD}")
+        if [ -n "${RG_JSON}" ]; then
+          args+=(--json "${RG_JSON}")
+        fi
+        if [ -n "${RG_SETTLE}" ]; then
+          args+=(--settle-ms "${RG_SETTLE}")
+        fi
+        if [ -n "${RG_MIN_SCORE}" ]; then
+          args+=(--min-score "${RG_MIN_SCORE}")
+        fi
+        if [ -n "${RG_MAX_MISSING}" ]; then
+          args+=(--max-missing-pct "${RG_MAX_MISSING}")
+        fi
+        # Last command on purpose: its exit code is the step's exit code,
+        # so --min-score and --max-missing-pct actually fail the build.
+        render-gap run "${args[@]}"
+
+    - name: Publish the report to the job summary
+      if: ${{ always() && inputs.job-summary == 'true' }}
+      shell: bash
+      env:
+        RG_MD: ${{ inputs.markdown }}
+      run: |
+        set -uo pipefail
+        if [ -s "${RG_MD}" ]; then
+          cat "${RG_MD}" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "render-gap produced no report." >> "$GITHUB_STEP_SUMMARY"
+        fi
