@@ -103,7 +103,7 @@ jobs:
   render-gap:
     runs-on: ubuntu-latest
     steps:
-      - uses: angelmunizpedraza/render-gap@main
+      - uses: angelmunizpedraza/render-gap@v1
         with:
           urls: |
             https://example.com/
