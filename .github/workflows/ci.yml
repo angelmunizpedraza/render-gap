@@ -36,3 +36,20 @@ jobs:
           code=$?
           set -e
           test "$code" -eq 1
+
+  action:
+    name: The action must run against a real page
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run this repository's own action
+        uses: ./
+        with:
+          urls: https://example.com/
+          min-score: "80"
+          markdown: example-com.md
+          json: example-com.json
+      - name: The reports must exist
+        run: |
+          test -s example-com.md
+          test -s example-com.json
