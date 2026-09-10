@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "render-gap"
+version = "0.1.0"
+description = "Show what your page gives a browser and hides from a non-JavaScript AI crawler."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Ángel Muñiz Pedraza", email = "angelhd029@gmail.com" }]
+keywords = ["seo", "geo", "javascript-rendering", "crawler", "technical-seo", "ai-search"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+]
+dependencies = ["requests>=2.28", "beautifulsoup4>=4.11"]
+
+[project.optional-dependencies]
+browser = ["playwright>=1.40"]
+dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/angelmunizpedraza/render-gap"
+Issues = "https://github.com/angelmunizpedraza/render-gap/issues"
+
+[project.scripts]
+render-gap = "rendergap.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["rendergap*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

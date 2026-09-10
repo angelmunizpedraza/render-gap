@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title></title></head>
+<body><div id="app"></div>
+<script>
+document.title = "Client-rendered demo page";
+const m = document.createElement('main');
+m.innerHTML = '<h1>Everything here arrives late</h1>' +
+  '<h2>Why does this matter for AI search?</h2>' +
+  '<p>An AI crawler that does not execute JavaScript receives an empty div and nothing else, so this page cannot be quoted in an answer even though a human sees a complete article with headings, copy and internal links.</p>' +
+  '<a href="/other">Another page</a>';
+document.getElementById('app').appendChild(m);
+const ld = document.createElement('script');
+ld.type = 'application/ld+json';
+ld.textContent = JSON.stringify({"@type":"Article","headline":"Everything here arrives late"});
+document.head.appendChild(ld);
+</script>
+</body></html>
