@@ -84,6 +84,48 @@ render-gap run https://example.com/ --max-missing-pct 10
 
 Exit codes: `0` pass · `1` a gate failed · `2` bad input (missing file, no browser, unreachable URL).
 
+## Use it as a GitHub Action
+
+Add this to a workflow and your build fails the day a deploy starts hiding
+content behind JavaScript. The action installs render-gap and Chromium,
+checks the URLs you give it, writes a Markdown report and appends it to the
+job summary.
+
+```yaml
+name: Render gap
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  render-gap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: angelmunizpedraza/render-gap@main
+        with:
+          urls: |
+            https://example.com/
+            https://example.com/pricing
+          min-score: "80"
+```
+
+| Input | Default | What it does |
+|---|---|---|
+| `urls` | — | URLs to check, separated by spaces or newlines. Required. |
+| `min-score` | `80` | Fail if any URL scores below this. Empty string reports without gating. |
+| `max-missing-pct` | *(none)* | Fail if more than this percentage of the body text is missing from the served HTML. |
+| `settle-ms` | `1500` | Wait after `networkidle` before reading the DOM. Raise it for frameworks that hydrate late. |
+| `markdown` | `render-gap-report.md` | Where to write the Markdown report. |
+| `json` | *(none)* | Where to write the JSON report. |
+| `job-summary` | `true` | Append the Markdown report to the GitHub job summary. |
+| `python-version` | `3.12` | Python used to run render-gap. |
+| `ref` | *(default branch)* | Git ref of render-gap to install. |
+
+The action runs against `https://example.com/` in this repository's own CI, so
+it is tested on every push rather than only documented.
+
 ## What the output looks like
 
 ```
